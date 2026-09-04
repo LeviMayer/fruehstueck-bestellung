@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Küchenübersicht</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: #fffaf3; color: #2b2320; padding: 16px; }
+  h1 { font-size: 1.3rem; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; }
+  .slot-block { background: white; border-radius: 10px; padding: 14px; margin-top: 18px; border: 1px solid #eee0d0; }
+  .slot-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 8px; }
+  .summary { background: #fff2df; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.95rem; }
+  .summary-row { display: flex; justify-content: space-between; }
+  .order { border-top: 1px solid #eee0d0; padding: 10px 0; }
+  .order.abgeholt { opacity: 0.4; }
+  .order-name { font-weight: 600; }
+  .order-items { font-size: 0.9rem; color: #6b5f55; }
+  button.abholen { margin-top: 6px; padding: 6px 12px; border-radius: 6px; border: 1px solid #d97706; background: white; color: #d97706; font-size: 0.85rem; }
+  button.abholen:disabled { border-color: #aaa; color: #aaa; }
+  a.logout { font-size: 0.85rem; color: #8a7a6a; }
+  .refresh-hint { font-size: 0.8rem; color: #8a7a6a; margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>🍳 Küchenübersicht</h1>
+    <div>
+      <a class="logout" href="{{ url_for('angebot_bearbeiten') }}">Angebot bearbeiten</a>
+      &nbsp;·&nbsp;
+      <a class="logout" href="{{ url_for('kueche_logout') }}">Abmelden</a>
+    </div>
+  </div>
+  <p class="refresh-hint">Seite neu laden für aktuelle Bestellungen (F5 / Wischen zum Aktualisieren).</p>
+
+  {% for slot_id, gruppe in gruppiert.items() %}
+  <div class="slot-block">
+    <div class="slot-title">{{ gruppe.label }}</div>
+
+    {% if gruppe.artikel_summe %}
+    <div class="summary">
+      {% for name, anzahl in gruppe.artikel_summe.items() %}
+      <div class="summary-row"><span>{{ name }}</span><span>{{ anzahl }}x</span></div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#8a7a6a;">Noch keine bezahlten Bestellungen.</p>
+    {% endif %}
+
+    {% for b in gruppe.bestellungen %}
+    <div class="order {{ 'abgeholt' if b.abgeholt else '' }}" id="order-{{ b.id }}">
+      <div class="order-name">{{ b.name }}</div>
+      <div class="order-items">
+        {% for p in b.positionen %}{{ p.anzahl }}x {{ p.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+      </div>
+      <button class="abholen" onclick="markiereAbgeholt('{{ b.id }}')" {{ 'disabled' if b.abgeholt else '' }}>
+        {{ 'Abgeholt ✓' if b.abgeholt else 'Als abgeholt markieren' }}
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+<script>
+async function markiereAbgeholt(id) {
+  await fetch(`/kueche/abgeholt/${id}`, { method: 'POST' });
+  const el = document.getElementById(`order-${id}`);
+  el.classList.add('abgeholt');
+  el.querySelector('button').disabled = true;
+  el.querySelector('button').textContent = 'Abgeholt ✓';
+}
+</script>
+</body>
+</html>

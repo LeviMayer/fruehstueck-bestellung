@@ -1,0 +1,61 @@
+{
+  "waehrung": "eur",
+  "items": [
+    {
+      "id": "broetchentuete",
+      "name": "Brötchentüte (2 Brötchen, Butter, Marmelade)",
+      "preis_cent": 350
+    },
+    {
+      "id": "croissant",
+      "name": "Croissant",
+      "preis_cent": 200
+    },
+    {
+      "id": "muesli",
+      "name": "Müsli mit Joghurt",
+      "preis_cent": 300
+    },
+    {
+      "id": "rueherei",
+      "name": "Rühreier mit Speck",
+      "preis_cent": 450
+    },
+    {
+      "id": "kaffee",
+      "name": "Kaffee",
+      "preis_cent": 250
+    },
+    {
+      "id": "orangensaft",
+      "name": "Orangensaft (0,2l)",
+      "preis_cent": 200
+    }
+  ],
+  "zeitfenster": [
+    {
+      "id": "sa_08",
+      "label": "Samstag, 08:00 - 09:00"
+    },
+    {
+      "id": "sa_09",
+      "label": "Samstag, 09:00 - 10:00"
+    },
+    {
+      "id": "sa_10",
+      "label": "Samstag, 10:00 - 11:00"
+    },
+    {
+      "id": "so_08",
+      "label": "Sonntag, 08:00 - 09:00"
+    },
+    {
+      "id": "so_09",
+      "label": "Sonntag, 09:00 - 10:00"
+    },
+    {
+      "id": "so_10",
+      "label": "Sonntag, 10:00 - 11:00"
+    }
+  ]
+}

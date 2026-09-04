@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Angebot bearbeiten</title>
+<style>
+  :root { --accent: #d97706; --bg: #fffaf3; --text: #2b2320; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
+  h1 { font-size: 1.3rem; margin-bottom: 4px; }
+  h2 { font-size: 1.05rem; margin-top: 28px; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; }
+  a.back { font-size: 0.85rem; color: #8a7a6a; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .row input[type=text] { padding: 9px; border: 1px solid #d8cfc4; border-radius: 8px; font-size: 0.95rem; }
+  .row input.name { flex: 2; }
+  .row input.preis { flex: 1; min-width: 0; }
+  .row input.label { flex: 1; }
+  .row button.entfernen { border: none; background: none; color: #b3261e; font-size: 1.2rem; padding: 4px 8px; }
+  button.hinzufuegen { margin-top: 10px; padding: 8px 14px; border: 1px dashed var(--accent); border-radius: 8px; background: white; color: var(--accent); font-size: 0.9rem; }
+  button.speichern { width: 100%; margin-top: 28px; padding: 14px; border: none; border-radius: 10px; background: var(--accent); color: white; font-size: 1.05rem; font-weight: 600; }
+  .hinweis { font-size: 0.85rem; color: #6b5f55; margin-top: 4px; }
+  .status { margin-top: 12px; font-weight: 600; }
+  .status.ok { color: #1a7f37; }
+  .status.error { color: #b3261e; }
+</style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1>🛠️ Angebot bearbeiten</h1>
+    <a class="back" href="{{ url_for('kueche_uebersicht') }}">← Zur Küchenübersicht</a>
+  </div>
+  <p class="hinweis">Änderungen gelten sofort für neue Bestellungen. Bereits aufgegebene Bestellungen bleiben unverändert.</p>
+
+  <h2>Artikel</h2>
+  <div id="items"></div>
+  <button type="button" class="hinzufuegen" id="item-hinzufuegen">+ Artikel hinzufügen</button>
+
+  <h2>Zeitfenster</h2>
+  <div id="slots"></div>
+  <button type="button" class="hinzufuegen" id="slot-hinzufuegen">+ Zeitfenster hinzufügen</button>
+
+  <button type="button" class="speichern" id="speichern-btn">Speichern</button>
+  <div class="status" id="status"></div>
+
+<script>
+const menu = {{ menu | tojson }};
+
+const itemsEl = document.getElementById('items');
+const slotsEl = document.getElementById('slots');
+
+function itemZeile(item) {
+  const div = document.createElement('div');
+  div.className = 'row';
+  div.innerHTML = `
+    <input type="text" class="name" placeholder="Artikelname" value="${item.name ? item.name.replace(/"/g, '&quot;') : ''}">
+    <input type="text" class="preis" placeholder="Preis in €" value="${item.preis_cent !== undefined ? (item.preis_cent / 100).toFixed(2) : ''}">
+    <button type="button" class="entfernen" title="Entfernen">✕</button>
+  `;
+  div.querySelector('.entfernen').addEventListener('click', () => div.remove());
+  itemsEl.appendChild(div);
+}
+
+function slotZeile(slot) {
+  const div = document.createElement('div');
+  div.className = 'row';
+  div.innerHTML = `
+    <input type="text" class="label" placeholder="z. B. Samstag, 08:00 - 09:00" value="${slot.label ? slot.label.replace(/"/g, '&quot;') : ''}">
+    <button type="button" class="entfernen" title="Entfernen">✕</button>
+  `;
+  div.querySelector('.entfernen').addEventListener('click', () => div.remove());
+  slotsEl.appendChild(div);
+}
+
+(menu.items || []).forEach(itemZeile);
+(menu.zeitfenster || []).forEach(slotZeile);
+
+document.getElementById('item-hinzufuegen').addEventListener('click', () => itemZeile({}));
+document.getElementById('slot-hinzufuegen').addEventListener('click', () => slotZeile({}));
+
+document.getElementById('speichern-btn').addEventListener('click', async () => {
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = '';
+  statusEl.className = 'status';
+
+  const items = Array.from(itemsEl.querySelectorAll('.row')).map(row => ({
+    name: row.querySelector('.name').value,
+    preis_euro: row.querySelector('.preis').value,
+  }));
+  const zeitfenster = Array.from(slotsEl.querySelectorAll('.row')).map(row => ({
+    label: row.querySelector('.label').value,
+  }));
+
+  const resp = await fetch('/kueche/angebot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, zeitfenster }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    statusEl.textContent = data.error || 'Speichern fehlgeschlagen.';
+    statusEl.classList.add('error');
+    return;
+  }
+  statusEl.textContent = 'Gespeichert!';
+  statusEl.classList.add('ok');
+});
+</script>
+</body>
+</html>

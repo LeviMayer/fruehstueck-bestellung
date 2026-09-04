@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frühstück vorbestellen – Badesee Ummendorf</title>
+<style>
+  :root { --accent: #d97706; --bg: #fffaf3; --text: #2b2320; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 16px; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  p.sub { color: #6b5f55; margin-top: 0; margin-bottom: 20px; }
+  label { font-weight: 600; display: block; margin-top: 16px; margin-bottom: 6px; }
+  input[type=text], input[type=email] { width: 100%; padding: 10px; border: 1px solid #d8cfc4; border-radius: 8px; font-size: 1rem; }
+  select { width: 100%; padding: 10px; border: 1px solid #d8cfc4; border-radius: 8px; font-size: 1rem; background: white; }
+  .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee0d0; }
+  .item-name { font-weight: 500; }
+  .item-price { color: #8a7a6a; font-size: 0.9rem; }
+  .qty { display: flex; align-items: center; gap: 10px; }
+  .qty button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--accent); background: white; color: var(--accent); font-size: 1.1rem; }
+  .qty span { min-width: 20px; text-align: center; }
+  .total { margin-top: 24px; font-size: 1.2rem; font-weight: 700; text-align: right; }
+  button.submit { width: 100%; margin-top: 20px; padding: 14px; border: none; border-radius: 10px; background: var(--accent); color: white; font-size: 1.05rem; font-weight: 600; }
+  .error { color: #b3261e; margin-top: 10px; }
+</style>
+</head>
+<body>
+  <h1>🥐 Frühstück vorbestellen</h1>
+  <p class="sub">Badesee Ummendorf – Festival-Camping</p>
+
+  <label for="name">Name / Zeltnummer</label>
+  <input type="text" id="name" placeholder="z. B. Max, Zelt 12">
+
+  <label for="email">E-Mail-Adresse</label>
+  <input type="email" id="email" placeholder="für deine Bestellbestätigung">
+
+  <label for="slot">Abholzeit</label>
+  <select id="slot">
+    {% for slot in slots %}
+    <option value="{{ slot.id }}">{{ slot.label }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Artikel</label>
+  {% for item in items %}
+  <div class="item" data-id="{{ item.id }}" data-price="{{ item.preis_cent }}">
+    <div>
+      <div class="item-name">{{ item.name }}</div>
+      <div class="item-price">{{ "%.2f"|format(item.preis_cent / 100) }} €</div>
+    </div>
+    <div class="qty">
+      <button type="button" class="minus">−</button>
+      <span class="count">0</span>
+      <button type="button" class="plus">+</button>
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="total">Summe: <span id="summe">0,00 €</span></div>
+  <div class="error" id="fehler"></div>
+  <button class="submit" id="bestellen-btn">Weiter zur Bezahlung</button>
+
+<script>
+function summeAktualisieren() {
+  let summe = 0;
+  document.querySelectorAll('.item').forEach(el => {
+    const anzahl = parseInt(el.querySelector('.count').textContent);
+    const preis = parseInt(el.dataset.price);
+    summe += anzahl * preis;
+  });
+  document.getElementById('summe').textContent = (summe / 100).toFixed(2).replace('.', ',') + ' €';
+}
+
+document.querySelectorAll('.item').forEach(el => {
+  const countEl = el.querySelector('.count');
+  el.querySelector('.plus').addEventListener('click', () => {
+    countEl.textContent = parseInt(countEl.textContent) + 1;
+    summeAktualisieren();
+  });
+  el.querySelector('.minus').addEventListener('click', () => {
+    countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+    summeAktualisieren();
+  });
+});
+
+document.getElementById('bestellen-btn').addEventListener('click', async () => {
+  const fehlerEl = document.getElementById('fehler');
+  fehlerEl.textContent = '';
+
+  const name = document.getElementById('name').value;
+  const email = document.getElementById('email').value;
+  const zeitfenster_id = document.getElementById('slot').value;
+  const mengen = {};
+  document.querySelectorAll('.item').forEach(el => {
+    const anzahl = parseInt(el.querySelector('.count').textContent);
+    if (anzahl > 0) mengen[el.dataset.id] = anzahl;
+  });
+
+  const resp = await fetch('/bestellen', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, zeitfenster_id, mengen })
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    fehlerEl.textContent = data.error || 'Es ist ein Fehler aufgetreten.';
+    return;
+  }
+  window.location.href = data.checkout_url;
+});
+</script>
+</body>
+</html>
